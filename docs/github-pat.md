@@ -9,6 +9,8 @@
    - `repo` — read/write access to repositories (includes private repos)
    - `read:user` — read your public profile
    - `read:org` — read organisation membership (if needed)
+   - `read:project` — read GitHub Projects (v2) data; needed for the project-data dropdown on the
+     [Issues page](issues-page.md) (fine-grained tokens: grant org-level **Projects: Read-only** instead)
 5. Click **Generate token** and copy it — GitHub only shows it once.
 
 ## Saving the PAT in gh-viewer

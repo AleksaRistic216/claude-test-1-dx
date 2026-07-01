@@ -27,6 +27,20 @@ A directory junction is used instead of a symlink because it doesn't require adm
 
 **Implication:** if a task needs to add, remove, or upgrade an npm package, run that `npm install` in the *main* worktree, not inside the task worktree — the task worktree has no `node_modules` of its own, so an install there would just replace the junction with a disconnected copy.
 
+## Keeping a worktree in sync with master
+
+A worktree branches from `master` at creation time and doesn't update automatically afterward. If `master` gains
+commits in the meantime (e.g. another task's worktree gets merged in while yours is still open), fast-forward
+before starting work:
+
+```powershell
+git fetch origin
+git merge --ff-only origin/master
+```
+
+This only fast-forwards cleanly while the worktree's branch has no commits of its own yet. Once you've started
+committing feature work on it, sync with a normal merge or rebase instead.
+
 ## Automating it: the `worktree-task` agent
 
 `.claude/agents/worktree-task.md` encapsulates this workflow. Ask Claude Code to do something "in a separate worktree" and it creates/enters the worktree, refreshes and junctions `node_modules` as above, then carries out the requested task inside it.

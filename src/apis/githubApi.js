@@ -17,4 +17,12 @@ githubApi.interceptors.request.use(config => {
   return config
 })
 
+export async function githubGraphql(query, variables, signal) {
+  const { data } = await githubApi.post('/graphql', { query, variables }, { signal })
+  if (data.errors?.length) {
+    throw new Error(data.errors.map(e => e.message).join('; '))
+  }
+  return data.data
+}
+
 export default githubApi
