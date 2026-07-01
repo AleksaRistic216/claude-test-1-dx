@@ -62,6 +62,9 @@ mainApi.interceptors.request.use(config => {
 export default mainApi
 ```
 
+See [`src/apis/githubApi.js`](../src/apis/githubApi.js) for a working instance of this pattern that talks to
+`api.github.com` directly (used by the [Issues page](issues-page.md)).
+
 ## Notes
 
 - The token is stored in plain text in `localStorage`. Do not use gh-viewer on shared or public machines.
