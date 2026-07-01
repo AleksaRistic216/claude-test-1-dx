@@ -40,6 +40,20 @@ Requires a PAT with project read access (classic PAT: `read:project` scope; fine
 **Projects: Read-only** permission) — see [github-pat.md](github-pat.md). Without it, or if the GraphQL request
 fails, the dropdowns are simply omitted and a dismissible warning is shown instead of blocking the issue list.
 
+## Filtering by project
+
+The Project dropdown lists the [GitHub Projects (v2) linked to the repo](dxvcs-github-projects.md). These are
+org-level boards, not repo-scoped classic projects, so they aren't available through the REST
+`GET /repos/{owner}/{repo}/projects` endpoint. Instead the page fetches `repository.projectsV2` through the same
+`githubGraphql` helper described above.
+
+Once a project is selected, filtering the issue list itself needs no extra endpoint: it's expressed as a
+`project:OWNER/NUMBER` qualifier appended to the existing `/search/issues` query, same as `state:` and `type:issue`.
+
+GraphQL always requires authentication (unlike `/search/issues`, which works unauthenticated at a lower rate
+limit), so the dropdown disables itself with a "Requires a GitHub PAT" note when no token is set in
+[Settings](github-pat.md).
+
 ## Changing the target repo
 
 `OWNER` and `REPO` are constants at the top of `src/pages/issues.jsx`. There's no repo picker UI; this page is

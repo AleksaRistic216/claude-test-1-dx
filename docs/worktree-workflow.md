@@ -6,9 +6,30 @@ This repo uses git worktrees to develop features in isolation, one per task, wit
 
 Worktrees are created with Claude Code's `EnterWorktree` tool (not `git worktree add` by hand). Each one:
 
-- Lives under `.claude/worktrees/<name>` (e.g. `.claude/worktrees/feature+settings-page`)
-- Checks out a new branch named `worktree-<name>` (e.g. `worktree-feature+settings-page`)
+- Lives under `.claude/worktrees/<name>` (e.g. `.claude/worktrees/feature-settings-page`)
+- Checks out a new branch named `worktree-<name>` (e.g. `worktree-feature-settings-page`)
 - Gets pushed and merged back into `master` via a normal PR once the task is done (see PR #1 for an example)
+
+**Naming:** `EnterWorktree`'s `name` only allows letters, digits, dots, underscores, and dashes — no `+`. Some
+earlier worktrees (e.g. `feature+settings-page`) predate this constraint; for new ones use a dash, e.g.
+`feature-<short-topic>`.
+
+### Recovering from an interrupted `EnterWorktree` call
+
+If the session is interrupted right after `EnterWorktree` creates a worktree (e.g. a new user message arrives
+before any follow-up work happens), the worktree can get torn down automatically. Symptoms:
+
+- `git worktree list` no longer lists it
+- the directory still exists on disk but is empty (or contains only a stray `node_modules` junction, if one was
+  created before the teardown)
+- `git status` run inside it reports the *main* worktree's branch, because there's no `.git` file left to anchor
+  it, so git walks up to the parent repo
+
+To clean up and retry: make sure no shell (Bash tool, PowerShell tool) still has the stale directory as its
+current working directory — `cd`/`Set-Location` out of it first, or deletion fails with "Device or resource
+busy" even though nothing is obviously using it. Then remove it with `cmd /c rmdir /s /q <path>` rather than a
+recursive Unix `rm -rf`, since that handles the leftover junction correctly. Once removed, call `EnterWorktree`
+again with a fresh name.
 
 ## Shared `node_modules`
 

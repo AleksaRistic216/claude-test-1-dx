@@ -2,6 +2,9 @@
 
 Source: [github.com/DevExpress/dxvcs](https://github.com/DevExpress/dxvcs) → Projects tab (queried via GraphQL `repository.projectsV2`).
 
+This is a point-in-time snapshot, not a live source of truth — the app itself re-queries this list on every
+load of the [Issues page](issues-page.md#filtering-by-project) to populate its project filter dropdown.
+
 Total: **37** projects linked to the repository (all are org-level GitHub Projects (v2) that include this repo as a linked repository — not repo-scoped classic projects).
 
 ## Index
