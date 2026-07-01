@@ -27,3 +27,7 @@ yarn-error.log*
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Playwright
+tests/__snapshots__/
+playwright-report/
