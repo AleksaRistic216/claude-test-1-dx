@@ -13,6 +13,7 @@ import TableSortLabel from '@mui/material/TableSortLabel'
 import Chip from '@mui/material/Chip'
 import Stack from '@mui/material/Stack'
 import FormControl from '@mui/material/FormControl'
+import FormHelperText from '@mui/material/FormHelperText'
 import InputLabel from '@mui/material/InputLabel'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
@@ -85,18 +86,34 @@ const SORT_OPTIONS = [
   { value: 'comments', label: 'Comments' }
 ]
 
+const PROJECTS_QUERY = `
+  query($owner: String!, $repo: String!, $after: String) {
+    repository(owner: $owner, name: $repo) {
+      projectsV2(first: 100, after: $after) {
+        nodes { number title closed }
+        pageInfo { hasNextPage endCursor }
+      }
+    }
+  }
+`
+
 export default function IssuesPage() {
   const [page, setPage] = useState(1)
   const [perPage, setPerPage] = useState(25)
   const [state, setState] = useState('open')
   const [sort, setSort] = useState('created')
   const [direction, setDirection] = useState('desc')
+  const [project, setProject] = useState('')
 
   const [issues, setIssues] = useState([])
   const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [hasPat, setHasPat] = useState(true)
+
+  const [projects, setProjects] = useState([])
+  const [projectsLoading, setProjectsLoading] = useState(false)
+  const [projectOptionsError, setProjectOptionsError] = useState(null)
 
   const [projectsByIssue, setProjectsByIssue] = useState({})
   const [projectsError, setProjectsError] = useState(null)
@@ -107,6 +124,42 @@ export default function IssuesPage() {
   }, [])
 
   useEffect(() => {
+    if (!hasPat) {
+      setProjects([])
+      return
+    }
+
+    const controller = new AbortController()
+
+    async function fetchProjects() {
+      setProjectsLoading(true)
+      setProjectOptionsError(null)
+      try {
+        const nodes = []
+        let after = null
+        for (;;) {
+          const data = await githubGraphql(PROJECTS_QUERY, { owner: OWNER, repo: REPO, after }, controller.signal)
+          const projectsV2 = data.repository.projectsV2
+          nodes.push(...projectsV2.nodes)
+          if (!projectsV2.pageInfo.hasNextPage) break
+          after = projectsV2.pageInfo.endCursor
+        }
+        nodes.sort((a, b) => a.title.localeCompare(b.title))
+        setProjects(nodes)
+      } catch (err) {
+        if (axiosCancelled(err)) return
+        setProjectOptionsError(err.message || 'Failed to load projects from GitHub.')
+        setProjects([])
+      } finally {
+        setProjectsLoading(false)
+      }
+    }
+
+    fetchProjects()
+    return () => controller.abort()
+  }, [hasPat])
+
+  useEffect(() => {
     const controller = new AbortController()
 
     async function fetchIssues() {
@@ -115,6 +168,7 @@ export default function IssuesPage() {
       try {
         const qualifiers = [`repo:${OWNER}/${REPO}`, 'type:issue']
         if (state !== 'all') qualifiers.push(`state:${state}`)
+        if (project) qualifiers.push(`project:${OWNER}/${project}`)
 
         const { data } = await githubApi.get('/search/issues', {
           signal: controller.signal,
@@ -141,7 +195,7 @@ export default function IssuesPage() {
 
     fetchIssues()
     return () => controller.abort()
-  }, [page, perPage, state, sort, direction])
+  }, [page, perPage, state, sort, direction, project])
 
   useEffect(() => {
     if (!hasPat || issues.length === 0) {
@@ -256,6 +310,32 @@ export default function IssuesPage() {
               <MenuItem value="closed">Closed</MenuItem>
               <MenuItem value="all">All</MenuItem>
             </Select>
+          </FormControl>
+
+          <FormControl size="small" sx={{ minWidth: 200 }} disabled={!hasPat || projectsLoading}>
+            <InputLabel id="project-label">Project</InputLabel>
+            <Select
+              labelId="project-label"
+              label="Project"
+              value={project}
+              onChange={e => {
+                setProject(e.target.value)
+                setPage(1)
+              }}
+            >
+              <MenuItem value="">All</MenuItem>
+              {projects.map(p => (
+                <MenuItem key={p.number} value={String(p.number)}>
+                  {p.title}
+                  {p.closed ? ' (closed)' : ''}
+                </MenuItem>
+              ))}
+            </Select>
+            {!hasPat ? (
+              <FormHelperText>Requires a GitHub PAT</FormHelperText>
+            ) : projectOptionsError ? (
+              <FormHelperText error>{projectOptionsError}</FormHelperText>
+            ) : null}
           </FormControl>
 
           <FormControl size="small" sx={{ minWidth: 140 }}>
